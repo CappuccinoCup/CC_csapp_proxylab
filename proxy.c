@@ -261,12 +261,25 @@ char *cache_find(char *uri) {
     int length = cache.cache_num;
     for(int i = 0;i < length;i++) {
     	if(strcmp(uri, p->cache_uri) == 0){
+            struct cache_struct *result = p;
+
+            /* LRU strategy */
+            if(i != 0) {
+                p->prev->next = p->next;
+                if(p->next != NULL)
+                    p->next->prev = p->prev;
+                p->prev = NULL;
+                p->next = cache.head;
+                p->next->prev = p;
+                cache.head = p;
+            }
+
             P(&cache.mutex);
             cache.readcnt--;
             if(cache.readcnt == 0)//last out
                 V(&cache.w);
             V(&cache.mutex);
-    		return p->cache_object;
+    		return result->cache_object;
 		}
 		p = p->next;
 	}
